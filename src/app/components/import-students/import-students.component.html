@@ -1,0 +1,58 @@
+<div class="container">
+  <h2>Import Students from Excel</h2>
+
+  <div class="import-form">
+    <div class="form-group">
+      <label for="file">Select Excel File (.xlsx or .xls)</label>
+      <input 
+        type="file" 
+        id="file" 
+        accept=".xlsx,.xls" 
+        (change)="onFileSelected($event)" 
+        class="form-control"
+        [disabled]="loading">
+      <small class="file-info" *ngIf="selectedFile">
+        Selected: {{ selectedFile.name }} ({{ (selectedFile.size / 1024 / 1024) | number:'1.2-2' }} MB)
+      </small>
+    </div>
+
+    <div *ngIf="error" class="error">{{ error }}</div>
+    <div *ngIf="success" class="success">{{ success }}</div>
+
+    <div class="form-actions">
+      <button 
+        class="btn btn-primary" 
+        (click)="onImport()" 
+        [disabled]="!selectedFile || loading">
+        <span *ngIf="loading">Importing...</span>
+        <span *ngIf="!loading">Import Students</span>
+      </button>
+      <button class="btn btn-secondary" (click)="cancel()" [disabled]="loading">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <h3>Excel File Format Requirements</h3>
+    <p>Your Excel file should have the following columns in order:</p>
+    <ol>
+      <li><strong>FirstName</strong> - Student's first name</li>
+      <li><strong>LastName</strong> - Student's last name</li>
+      <li><strong>Email</strong> - Valid email address</li>
+      <li><strong>CollegeName</strong> - Name of the college</li>
+      <li><strong>Department</strong> - Department name</li>
+      <li><strong>Major</strong> - Major/specialization</li>
+      <li><strong>GraduationDate</strong> - Date in DD-MM-YYYY format</li>
+      <li><strong>CGPA</strong> - CGPA on 0-10 scale</li>
+      <li><strong>CodilityTest1</strong> - Score 0-100</li>
+      <li><strong>CodilityTest2</strong> - Score 0-100</li>
+      <li><strong>CodilityTest3</strong> - Score 0-100</li>
+      <li><strong>CodilityTest4</strong> - Score 0-100</li>
+      <li><strong>CodilityTest5</strong> - Score 0-100</li>
+      <li><strong>MidtermScore</strong> - Score on 0-4 scale</li>
+      <li><strong>GCScore</strong> - Score on 0-4 scale</li>
+    </ol>
+    <p><strong>Note:</strong> The first row should contain column headers exactly as listed above.</p>
+  </div>
+</div>

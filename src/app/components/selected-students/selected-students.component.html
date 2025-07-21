@@ -1,0 +1,46 @@
+<div class="container">
+  <h2>Selected Students (Final Score ≥ 3.1)</h2>
+  <p class="subtitle">Students ranked by final score in descending order</p>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div class="stats" *ngIf="!loading && !error">
+    <p><strong>Total Selected Students: {{ students.length }}</strong></p>
+  </div>
+
+  <div class="table-container" *ngIf="!loading && !error">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>College</th>
+          <th>Department</th>
+          <th>CGPA</th>
+          <th>Midterm Score</th>
+          <th>GC Score</th>
+          <th>Final Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let student of students; let i = index" [class.top-rank]="i < 3">
+          <td class="rank">{{ i + 1 }}</td>
+          <td>{{ student.firstName }} {{ student.lastName }}</td>
+          <td>{{ student.email }}</td>
+          <td>{{ student.collegeInfo.collegeName }}</td>
+          <td>{{ student.collegeInfo.department }}</td>
+          <td>{{ student.graduationDetails.cgpa }}</td>
+          <td>{{ student.midtermScore | number:'1.2-2' }}</td>
+          <td>{{ student.gcScore | number:'1.2-2' }}</td>
+          <td class="final-score">{{ student.finalScore | number:'1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="back-button">
+    <button class="btn btn-secondary" routerLink="/students">Back to All Students</button>
+  </div>
+</div>

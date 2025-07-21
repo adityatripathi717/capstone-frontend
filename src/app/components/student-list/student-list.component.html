@@ -1,0 +1,47 @@
+<div class="container">
+  <h2>Student Management</h2>
+  
+  <div class="actions">
+    <button class="btn btn-secondary" (click)="viewSelected()">View Selected Students</button>
+    <button class="btn btn-info" (click)="importStudents()">Import from Excel</button>
+    <button class="btn btn-warning" (click)="testApiConnection()">Test API Connection</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div class="table-container" *ngIf="!loading && !error">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>College</th>
+          <th>Department</th>
+          <th>CGPA</th>
+          <th>Final Score</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let student of students" [class.selected-student]="student.finalScore >= 3.1">
+          <td>{{ student.firstName }} {{ student.lastName }}</td>
+          <td>{{ student.email }}</td>
+          <td>{{ student.collegeInfo.collegeName }}</td>
+          <td>{{ student.collegeInfo.department }}</td>
+          <td>{{ student.graduationDetails.cgpa }}</td>
+          <td class="final-score">{{ student.finalScore | number:'1.2-2' }}</td>
+          <td>
+            <span class="status-badge" [class.selected]="student.finalScore >= 3.1" [class.not-selected]="student.finalScore < 3.1">
+              {{ student.finalScore >= 3.1 ? 'Selected' : 'Not Selected' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-danger" (click)="deleteStudent(student.id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
