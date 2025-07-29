@@ -1,47 +1,255 @@
 <div class="container">
-  <h2>Student Management</h2>
-  
-  <div class="actions">
-    <button class="btn btn-secondary" (click)="viewSelected()">View Selected Students</button>
-    <button class="btn btn-info" (click)="importStudents()">Import from Excel</button>
-    <button class="btn btn-warning" (click)="testApiConnection()">Test API Connection</button>
+  <div class="header">
+    <h1>🎓 Capstone Student Management System</h1>
+    <p class="subtitle">Manage student data and notify selected candidates</p>
   </div>
 
-  <div *ngIf="loading" class="loading">Loading...</div>
-  <div *ngIf="error" class="error">{{ error }}</div>
+  <!-- Action Buttons -->
+  <div class="actions">
+    <button 
+      class="btn btn-secondary" 
+      (click)="viewSelected()" 
+      [disabled]="loading || notificationLoading">
+      <span *ngIf="loading" class="spinner"></span>
+      🎯 View Selected Students
+      <span class="count-badge" *ngIf="!showSelected && students.length > 0">{{ getSelectedCount() }}</span>
+    </button>
+    
+    <div class="import-section">
+      <input 
+        type="file" 
+        id="fileInput"
+        accept=".xlsx,.xls" 
+        (change)="onFileSelected($event)"
+        [disabled]="loading || notificationLoading">
+      <button 
+        class="btn btn-info" 
+        (click)="importStudents()" 
+        [disabled]="!selectedFile || loading || notificationLoading">
+        <span *ngIf="loading" class="spinner"></span>
+        📊 Import from Excel
+      </button>
+    </div>
+    
+    <!-- 🚀 NEW: Email Notification Button -->
+    <button 
+      class="btn btn-success notification-btn" 
+      (click)="notifySelected()" 
+      [disabled]="loading || notificationLoading || students.length === 0">
+      <span *ngIf="notificationLoading" class="spinner"></span>
+      📧 Notify Selected Students
+    </button>
+    
+    <button 
+      class="btn btn-warning" 
+      (click)="testApiConnection()" 
+      [disabled]="loading || notificationLoading">
+      <span *ngIf="loading" class="spinner"></span>
+      🔧 Test API Connection
+    </button>
+  </div>
 
-  <div class="table-container" *ngIf="!loading && !error">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>College</th>
-          <th>Department</th>
-          <th>CGPA</th>
-          <th>Final Score</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let student of students" [class.selected-student]="student.finalScore >= 3.1">
-          <td>{{ student.firstName }} {{ student.lastName }}</td>
-          <td>{{ student.email }}</td>
-          <td>{{ student.collegeInfo.collegeName }}</td>
-          <td>{{ student.collegeInfo.department }}</td>
-          <td>{{ student.graduationDetails.cgpa }}</td>
-          <td class="final-score">{{ student.finalScore | number:'1.2-2' }}</td>
-          <td>
-            <span class="status-badge" [class.selected]="student.finalScore >= 3.1" [class.not-selected]="student.finalScore < 3.1">
-              {{ student.finalScore >= 3.1 ? 'Selected' : 'Not Selected' }}
-            </span>
-          </td>
-          <td>
-            <button class="btn btn-sm btn-danger" (click)="deleteStudent(student.id)">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- Notification Result Display -->
+  <div *ngIf="lastNotificationResult" class="notification-result">
+    <h3>📧 Last Notification Result:</h3>
+    <p>{{ lastNotificationResult }}</p>
+    <button class="btn-close" (click)="lastNotificationResult = null">×</button>
+  </div>
+
+  <!-- Error Display -->
+  <div *ngIf="error" class="error-message">
+    <strong>❌ Error:</strong> {{ error }}
+    <button class="btn-close" (click)="clearError()">×</button>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading || notificationLoading" class="loading">
+    <div class="spinner-large"></div>
+    <p *ngIf="loading">Loading students...</p>
+    <p *ngIf="notificationLoading">Sending email notifications...</p>
+  </div>
+
+  <!-- Selected Students View -->
+  <div *ngIf="showSelected && !loading">
+    <div class="section-header">
+      <h2>🎯 Selected Students (Final Score ≥ 3.1)</h2>
+      <button class="btn btn-secondary" (click)="backToAll()">← Back to All Students</button>
+    </div>
+    
+    <div *ngIf="selectedStudents.length === 0" class="no-data">
+      <h3>No Selected Students Found</h3>
+      <p>No students have a final score of 3.1 or higher.</p>
+    </div>
+
+    <!-- Selected Students Cards -->
+    <div *ngIf="selectedStudents.length > 0" class="students-grid">
+      <div class="student-card selected" *ngFor="let student of selectedStudents">
+        <div class="student-header">
+          <h3>{{ student.firstName }} {{ student.lastName }}</h3>
+          <span class="badge badge-selected">SELECTED</span>
+        </div>
+        
+        <div class="student-details">
+          <p><strong>📧 Email:</strong> {{ student.email }}</p>
+          <p><strong>🏫 College:</strong> {{ student.collegeInfo.collegeName }}</p>
+          <p><strong>🎓 Department:</strong> {{ student.collegeInfo.department }}</p>
+          <p><strong>📚 Major:</strong> {{ student.collegeInfo.major }}</p>
+          <p><strong>📅 Graduation:</strong> {{ formatDate(student.graduationDetails.graduationDate) }}</p>
+          <p><strong>📊 CGPA:</strong> {{ formatScore(student.graduationDetails.cgpa) }}/10</p>
+        </div>
+
+        <div class="scores-section">
+          <h4>📈 Scores</h4>
+          <div class="scores-grid">
+            <div class="score-item">
+              <span class="score-label">Midterm:</span>
+              <span class="score-value">{{ formatScore(student.midtermScore) }}/4</span>
+            </div>
+            <div class="score-item">
+              <span class="score-label">GC Score:</span>
+              <span class="score-value">{{ formatScore(student.gcScore) }}/4</span>
+            </div>
+            <div class="score-item final-score">
+              <span class="score-label">Final Score:</span>
+              <span class="score-value">{{ formatScore(student.finalScore) }}/4</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="codility-scores">
+          <h4>💻 Codility Scores</h4>
+          <div class="codility-grid">
+            <div *ngFor="let score of student.codilityScores" class="codility-item">
+              <span>{{ score.testName }}:</span>
+              <span>{{ formatScore(score.score) }}/100</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Students View -->
+  <div *ngIf="!showSelected && !loading">
+    <div class="section-header">
+      <h2>👥 All Students</h2>
+      <div class="stats" *ngIf="students.length > 0">
+        <span class="stat-item">Total: {{ getTotalCount() }}</span>
+        <span class="stat-item selected">Selected: {{ getSelectedCount() }}</span>
+        <span class="stat-item not-selected">Not Selected: {{ getTotalCount() - getSelectedCount() }}</span>
+      </div>
+    </div>
+    
+    <div *ngIf="students.length === 0" class="no-data">
+      <h3>No Students Found</h3>
+      <p>Import an Excel file to add students to the system.</p>
+    </div>
+
+    <!-- Students Table -->
+    <div class="table-container" *ngIf="students.length > 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>College</th>
+            <th>Department</th>
+            <th>Major</th>
+            <th>CGPA</th>
+            <th>Midterm</th>
+            <th>GC Score</th>
+            <th>Final Score</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let student of students" 
+              [class.selected-student]="student.finalScore >= 3.1"
+              [class.not-selected-student]="student.finalScore < 3.1">
+            <td class="name-cell">
+              <strong>{{ student.firstName }} {{ student.lastName }}</strong>
+            </td>
+            <td class="email-cell">{{ student.email }}</td>
+            <td>{{ student.collegeInfo.collegeName }}</td>
+            <td>{{ student.collegeInfo.department }}</td>
+            <td>{{ student.collegeInfo.major }}</td>
+            <td class="score-cell">{{ formatScore(student.graduationDetails.cgpa) }}/10</td>
+            <td class="score-cell">{{ formatScore(student.midtermScore) }}/4</td>
+            <td class="score-cell">{{ formatScore(student.gcScore) }}/4</td>
+            <td class="final-score-cell">
+              <strong>{{ formatScore(student.finalScore) }}/4</strong>
+            </td>
+            <td class="status-cell">
+              <span class="status-badge" [ngClass]="getStatusBadgeClass(student.finalScore)">
+                {{ getStatusText(student.finalScore) }}
+              </span>
+            </td>
+            <td class="actions-cell">
+              <button class="btn btn-sm btn-danger" 
+                      (click)="deleteStudent(student)"
+                      [disabled]="loading || notificationLoading"
+                      title="Delete Student">
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Students Cards (Alternative Mobile View) -->
+    <div class="students-grid mobile-only" *ngIf="students.length > 0">
+      <div class="student-card" *ngFor="let student of students" 
+           [ngClass]="{'selected': student.finalScore >= 3.1}">
+        <div class="student-header">
+          <h3>{{ student.firstName }} {{ student.lastName }}</h3>
+          <span class="badge" [ngClass]="getStatusBadgeClass(student.finalScore)">
+            {{ getStatusText(student.finalScore) }}
+          </span>
+          <button class="btn-delete" 
+                  (click)="deleteStudent(student)" 
+                  [disabled]="loading || notificationLoading"
+                  title="Delete Student">🗑️</button>
+        </div>
+        
+        <div class="student-details">
+          <p><strong>📧 Email:</strong> {{ student.email }}</p>
+          <p><strong>🏫 College:</strong> {{ student.collegeInfo.collegeName }}</p>
+          <p><strong>🎓 Department:</strong> {{ student.collegeInfo.department }}</p>
+          <p><strong>📚 Major:</strong> {{ student.collegeInfo.major }}</p>
+          <p><strong>📅 Graduation:</strong> {{ formatDate(student.graduationDetails.graduationDate) }}</p>
+          <p><strong>📊 CGPA:</strong> {{ formatScore(student.graduationDetails.cgpa) }}/10</p>
+        </div>
+
+        <div class="scores-section">
+          <h4>📈 Scores</h4>
+          <div class="scores-grid">
+            <div class="score-item">
+              <span class="score-label">Midterm:</span>
+              <span class="score-value">{{ formatScore(student.midtermScore) }}/4</span>
+            </div>
+            <div class="score-item">
+              <span class="score-label">GC Score:</span>
+              <span class="score-value">{{ formatScore(student.gcScore) }}/4</span>
+            </div>
+            <div class="score-item final-score">
+              <span class="score-label">Final Score:</span>
+              <span class="score-value">{{ formatScore(student.finalScore) }}/4</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="codility-scores">
+          <h4>💻 Codility Scores</h4>
+          <div class="codility-grid">
+            <div *ngFor="let score of student.codilityScores" class="codility-item">
+              <span>{{ score.testName }}:</span>
+              <span>{{ formatScore(score.score) }}/100</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
